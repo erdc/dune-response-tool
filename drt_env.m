@@ -3,7 +3,7 @@ function scenario = drt_env(scenario)
     %these time series datasets needed to run erosion/accretion model
     %
     %Required Inputs: 'scenario' structure variable with the following
-    %infromation,
+    %information,
     %       scenario.location.lat [value from -90 to 90]
     %       scenario.location.lon [value from -180 to 180]
     %       scenario.timing.start_date [model start date in datenum format]
@@ -294,9 +294,12 @@ function tides = noaa_download_tides(scenario)
          st_date = datestr([yrs(i),1,1,0,0,0],'yyyymmdd');
          end_date   = datestr([yrs(i),12,31,23,59,59],'yyyymmdd');
 
-         url=['http://tidesandcurrents.noaa.gov/api/datagetter?product=predictions&application=NOS.COOPS.TAC.WL&begin_date=',st_date,'&end_date=',end_date,'&datum=NAVD&station=',gauge,'&time_zone=GMT&units=metric&interval=h&format=CSV'];
+         %url=['http://tidesandcurrents.noaa.gov/api/datagetter?product=predictions&application=NOS.COOPS.TAC.WL&begin_date=',st_date,'&end_date=',end_date,'&datum=NAVD&station=',gauge,'&time_zone=GMT&units=metric&interval=h&format=CSV'];
 
-         datatemp=webread(url);    
+         url=['https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&application=NOS.COOPS.TAC.WL&begin_date=',st_date,'&end_date=',end_date,'&datum=NAVD&station=',gauge,'&time_zone=GMT&units=metric&interval=h&format=CSV'];
+         options = weboptions;
+         options.Timeout = 120;
+         datatemp=webread(url, options);    
 
          dataout=[dataout;datatemp];
     end   
@@ -305,32 +308,6 @@ function tides = noaa_download_tides(scenario)
         time_pred(i)=datenum(datacell{i,1});
         wl_pred(i)=datacell{i,2};
     end  
-
-%  %loop through each year of vertified tide data for noaa erddap server
-%     wl_pred = [];
-%     time_pred = [];
-%     for yr = startYear:endYear
-%         
-%         %erdap server link
-%         website = ['https://coastwatch.pfeg.noaa.gov/erddap/tabledap/nosCoopsWLTP60.mat?STATION_ID%2CDATUM%2CBEGIN_DATE%2CEND_DATE%2Ctime%2CpredictedWL&STATION_ID=%22', gauge,'%22&DATUM%3E=%22MLLW%22&BEGIN_DATE%3E=%22', num2str(yr),'0101%2000%3A00%22&END_DATE%3E=%22', num2str(yr),'1231%2023%3A59%22'];
-%         
-%         %download data
-%         out_name = 'tides.mat'; %need to store temporary data to current folder
-%         options = weboptions;
-%         options.Timeout = 120;
-%         websave(out_name, website, options);
-%         
-%         %load and then clean up variables
-%         load(out_name);
-%         delete(out_name);
-% 
-%         %store data
-%         wltemp = double(nosCoopsWLTP60.predictedWL);
-%         timetemp = double(nosCoopsWLTP60.time/86400 + datenum(1970,1,1));
-%         wl_pred = [wl_pred; wltemp];
-%         time_pred = [time_pred; timetemp];
-% 
-%     end
     
     %interpolate data to output
     tides.wl = interp1gap(time, double(wl), scenario.timing.times, 6/24);  
@@ -435,15 +412,10 @@ function waves = transform_waves(waves, scenario)
         Hstemp = waves.Hs_deepwater;
         localD(ifind) = maxD;    
        
-%    if nanmean(localD) < 45
-        [waves.Hs_25m,waves.L_25m,waves.D_25m] = shoal_waves(double(Hstemp),abs(double(waves.depth)),double(localD),double(waves.Tp),25);                        
+        %shoal waves
+       [waves.Hs_25m,waves.L_25m,waves.D_25m] = shoal_waves(double(Hstemp),abs(double(waves.depth)),double(localD),double(waves.Tp),25);                        
         waves.Hs_25m = real(waves.Hs_25m);
-%     else %there may be something wrong with the azimuth so just use the waves as is
-%             waves.Hs_25m = waves.Hs_deepwater;
-%             waves.L_25m = 9.81*waves.Tp(:).*waves.Tp(:)./(2*pi);
-%             waves.D_25m = zeros(size(waves.Hs_25m));
-%     end
-    %end
+
     
     if isfield(waves, 'Hs_25m') ~= 1
             waves.Hs_25m = waves.Hs_deepwater;
@@ -451,10 +423,6 @@ function waves = transform_waves(waves, scenario)
             waves.D_25m = zeros(size(waves.Hs_25m));
     end
        
-%     %also set wave heights as zero if wave direction is headed offshore
-%     if nanmean(localD) < 45
-%          waves.Hs_25m(abs(localD)>=65) = 0;
-%     end
     
     %there are also other hiccups in the shoal code that leads to large
     %wave heights. a limiter is added to prevent this
@@ -505,9 +473,7 @@ end
 
  function [ws,wd] = uv_to_wswd(u, v)
     % function that takes vectors (u,v) and converts to  
-    % wind speed and wind direction (deg from North) vectors
-    % This version copes with NaNs in vectors: 23 April 2007
-    % function [ws,wd] = uv_to_wswd2(u, v)
+    % wind speed and wind direction
 
     ws = NaN*ones(size(u));
     wd = NaN*ones(size(u));
@@ -537,7 +503,7 @@ function tides = noaa_download_tide_prediction(scenario)
          st_date = datestr([yrs(i),1,1,0,0,0],'yyyymmdd');
          end_date   = datestr([yrs(i),12,31,23,59,59],'yyyymmdd');
 
-         url=['http://tidesandcurrents.noaa.gov/api/datagetter?product=predictions&application=NOS.COOPS.TAC.WL&begin_date=',st_date,'&end_date=',end_date,'&datum=NAVD&station=',gauge,'&time_zone=GMT&units=metric&interval=h&format=CSV'];
+         url=['https://tidesandcurrents.noaa.gov/api/datagetter?product=predictions&application=NOS.COOPS.TAC.WL&begin_date=',st_date,'&end_date=',end_date,'&datum=NAVD&station=',gauge,'&time_zone=GMT&units=metric&interval=h&format=CSV'];
          options = weboptions;
         options.Timeout = 120;
          datatemp=webread(url, options);    
@@ -688,6 +654,7 @@ end
 
 
 function surge = choosedialogSurge
+    %pop up box to choose how much surge to add
 
     d = dialog('Position',[300 300 250 150],'Name','Select One');
     txt = uicontrol('Parent',d,...
@@ -730,4 +697,272 @@ function surge = choosedialogSurge
           choice = char(popup_items(idx,:));
        end
 
+end
+
+function [ vq ] = interp1gap(varargin)
+%INTERP1GAP performs interpolation over small gaps in 1D data. 
+% 
+%% Syntax
+% 
+%  vq = interp1gap(v)
+%  vq = interp1gap(x,v,xq)
+%  vq = interp1gap(...,maxgapval)
+%  vq = interp1gap(...,'method')
+%  vq = interp1gap(...,'interpval',vval)
+%  vq = interp1gap(...,'extrap',extrapval)
+% 
+%% Description 
+% 
+% vq = interp1gap(v) linearly interpolates to give undefined (NaN) values of v.
+%
+% vq = interp1gap(x,v,xq) interpolates to find vq, the values of the underlying 
+% function v at the points in the vector or array xq.
+%
+% vq = interp1gap(...,maxgapval) specifies a maximum gap in the independent variable
+% over which to interpolate. If x and xq are given, units of maxgapval match the
+% units of x.  If x and xq are not provided, units of maxgapval are indices
+% of v, assuming any gaps in v are represented by NaN.  If maxgapval is not 
+% declared, interp1gap will interpolate over infitely-large gaps. 
+%
+% vq = interp1gap(...,'method') specifies a method of interpolation. Default method 
+% is 'linear', but can be any of the following: 
+%
+% * 'nearest' nearest neighbor interpolation 
+% * 'linear' linear interpolation (default) 
+% * 'spline' cubic spline interpolation
+% * 'pchip' piecewise cubic Hermite interpolation
+% * 'cubic' (same as 'pchip')
+% * 'v5cubic' Cubic interpolation used in MATLAB 5. 
+% * 'next' next neighbor interpolation (Matlab R2014b or later) 
+% * 'previous' previous neighbor interpolation (Matlab R2014b or later) 
+% 
+% vq = interp1gap(...,'interpval',vval) specifies a value with which to replace 
+% vq elements corresponding to large gaps. Default is NaN. 
+% 
+% vq = interp1gap(...,'extrap',extrapval) returns the scalar extrapval
+% for out-of-range values. NaN and 0 are often used for extrapval. 
+% 
+%% Examples 
+% EXAMPLE 1: Interpolate over gaps equal to or smaller than 0.5 x units:
+% 
+% First create some data with holes and plot it: 
+% x = 0:.02:15; 
+% y = sin(x); 
+% x([1:3 25 32:33 200:280 410:425 500:575]) = []; 
+% y([1:3 25 32:33 200:280 410:425 500:575]) = []; 
+% plot(x,y,'ko'); hold on
+% 
+% % Now interpolate y values to an xi grid: 
+% xi = 0:.015:15;
+% yi = interp1gap(x,y,xi,.5); 
+% 
+% plot(xi,yi,'b.')
+% 
+% .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
+%
+% EXAMPLE 2: Same as Example 1, but cubic interpolation instead of default linear:
+% 
+% First create some data with holes and plot it: 
+% x = 0:.02:15; 
+% y = sin(x); 
+% x([1:3 25 32:33 200:280 410:425 500:575]) = []; 
+% y([1:3 25 32:33 200:280 410:425 500:575]) = []; 
+% plot(x,y,'ko'); hold on
+% 
+% % Now interpolate y values to an xi grid: 
+% xi = 0:.015:15;
+% yi = interp1gap(x,y,xi,.5,'cubic'); 
+% 
+% plot(xi,yi,'b.')
+% 
+% .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
+%
+% EXAMPLE 3: Same as Example 2, but replace large holes with y = 0.75:
+% 
+% % First create some data with holes and plot it: 
+% x = 0:.02:15; 
+% y = sin(x); 
+% x([1:3 25 32:33 200:280 410:425 500:575]) = []; 
+% y([1:3 25 32:33 200:280 410:425 500:575]) = []; 
+% plot(x,y,'ko'); hold on
+% 
+% % Now interpolate y values to an xi grid: 
+% xi = 0:.015:15;
+% yi = interp1gap(x,y,xi,.5,'cubic','interpval',.75); 
+% 
+% plot(xi,yi,'b.')
+% 
+%% Author Info:
+% Written by Chad Greene with help from 'Paul', Feb. 2014. 
+% (http://www.mathworks.com/matlabcentral/answers/117174)
+% Updated November 2014 to allow for monotonically decreasing x. 
+% 
+% http://www.chadagreene.com
+% The University of Texas at Austin
+% Institute for Geophysics (UTIG)
+%
+% See also interp1, interp1q, interp2, interpn.
+
+% Copyright (c) 2014, Chad Greene
+% All rights reserved.
+% 
+% Redistribution and use in source and binary forms, with or without
+% modification, are permitted provided that the following conditions are met:
+% 
+% * Redistributions of source code must retain the above copyright notice, this
+%   list of conditions and the following disclaimer.
+% 
+% * Redistributions in binary form must reproduce the above copyright notice,
+%   this list of conditions and the following disclaimer in the documentation
+%   and/or other materials provided with the distribution
+% * Neither the name of The University of Texas at Austin nor the names of its
+%   contributors may be used to endorse or promote products derived from this
+%   software without specific prior written permission.
+% THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+% AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+% IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+% DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+% FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+% DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+% SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+% CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+% OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+% OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+%% Check inputs:
+
+assert(nargin>0,'interp1gap requires at least one input. C''mon, one lousy input is the least you could do.')
+
+%% Set defaults: 
+
+maxgapval = inf; 
+method = 'linear'; 
+interpval = NaN; 
+extrap = false; 
+
+% Look for user-defined interpolation method: 
+tmp = strncmpi(varargin,'lin',3)|strncmpi(varargin,'cubic',3)|...
+    strncmpi(varargin,'near',4)|strncmpi(varargin,'spline',3)|...
+    strncmpi(varargin,'pchip',3)|strncmpi(varargin,'v5cub',3)|...
+    strncmpi(varargin,'next',4)|strncmpi(varargin,'prev',4); 
+if any(tmp)
+    method = varargin{tmp}; 
+    varargin = varargin(~tmp); 
+end
+
+% Look for user-defined interpval: 
+tmp = strncmpi(varargin,'interpval',6); 
+if any(tmp)
+    interpval = varargin{find(tmp)+1}; 
+    tmp(find(tmp)+1)=1; 
+    varargin = varargin(~tmp); 
+end
+
+% Look for user-defined extrapval: 
+tmp = strncmpi(varargin,'extrap',6); 
+if any(tmp)
+    extrapval = varargin{find(tmp)+1}; 
+    tmp(find(tmp)+1)=1; 
+    varargin = varargin(~tmp); 
+    extrap = true; 
+    assert(isscalar(extrapval)==1,'Extrapval must be a scalar.') 
+end
+
+narginleft = length(varargin); % the number of arguments after parsing inputs
+
+%% Parse inputs:
+% If only one input is declared, assume the user simply wants to interpolate
+% over any NaN values in the input. 
+if narginleft==1 
+    v = varargin{1}; 
+    x = 1:length(v); 
+    xq = x;
+end
+
+% If only two inputs are declared, assume NaN interpolation as above, and
+% assume the second input is the maxgapval: 
+if narginleft==2
+    v = varargin{1}; 
+    maxgapval = varargin{2};
+    x = 1:length(v); 
+    xq = x; 
+end    
+
+% If no maxgapval is declared, assume infinitely large gaps are A-OK:
+if narginleft==3 
+    x = varargin{1}; 
+    v = varargin{2}; 
+    xq = varargin{3}; 
+end
+
+if narginleft==4 
+    x = varargin{1}; 
+    v = varargin{2}; 
+    xq = varargin{3}; 
+    maxgapval = varargin{4};
+end
+
+%% Post-parsing input checks: 
+
+assert(isscalar(maxgapval)==1,'maxgapval must be a scalar.') 
+assert(isnumeric(x)==1&isvector(x)==1,'x must be a numeric array.') 
+assert(isvector(v)==1,'Input v must be a vector.') 
+assert(isvector(xq)==1,'Input xq must be a vector.') 
+
+%% Deal with input NaNs: 
+
+x = x(~isnan(v)); 
+v = v(~isnan(v)); 
+
+%% Columnate everything: 
+% Columnation may be unnecessary, but it ensures that the heavy lifting will always be performed 
+% the same way, regardless of input format: 
+
+StartedRow = false; 
+if isrow(xq)
+    xq = xq'; 
+    StartedRow = true; 
+end
+
+x = x(:); 
+v = v(:); 
+
+%% Perform interpolation: 
+
+if extrap
+    vq = interp1(x,v,xq,method,extrapval); 
+else
+    vq = interp1(x,v,xq,method); 
+end
+
+%% Replace data where gaps are too large: 
+
+% Find indices of gaps in x larger than maxgapval: 
+x_gap = diff(x); 
+ind=find(abs(x_gap)>maxgapval);
+
+% Preallocate array which will hold vq indices corresponding to large gaps in x data: 
+ind_int=[];  
+
+% For each gap, find corresponding xq indices: 
+for N=1:numel(ind)
+    
+    if x_gap(1)>=0 % assume x is montaonically increasing
+        ind_int = [ind_int;find((xq>x(ind(N)) & xq<x(ind(N)+1)))];
+        
+    else % assume x is monatonically decreasing
+        ind_int = [ind_int;find((xq>x(ind(N)+1) & xq<x(ind(N))))];
+    end
+end
+
+% Replace vq values corresponding to large gaps in x:  
+vq(ind_int)=interpval;
+
+%% Clean up: 
+
+% If xq started as a row vector, return vq as a row vector:  
+if StartedRow
+    vq = vq'; 
+end
 end

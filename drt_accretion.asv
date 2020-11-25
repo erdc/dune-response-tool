@@ -2,11 +2,14 @@ function scenario = drt_accretion(scenario)
     %drt_accretion: code to run a simple aeolian sediment transport model
     %for calculating wind blown sediment fluxes into coastal dines
     %
-    %Required Inputs: 'scenario' structure variable with the 'grids',
-    %'erosion', and 'env' variables    
+    %Required Inputs: 'scenario' structure variable with the 'grids', 
+    
     %
     %Outputs:
-    %       scenario.accretion
+    %       scenario.env.waves
+    %       scenario.env.winds
+    %       scenario.env.tides
+   
     
     %set up aeolian model
         twl = scenario.erosion.TWL;
@@ -76,19 +79,4 @@ function scenario = drt_accretion(scenario)
     %convert outputs
         scenario.accretion.dV = Qtot_m3m_dt;
     
-end
-
-function yy = linterp(x,y,xx)
-    %linear interpolation routine
-    nx = max(size(x));
-    nxx = max(size(xx));
-    yy = zeros(size(xx)); 
-    j = 2;
-    for i = 1:nxx
-       while x(j) < xx(i)
-             j = j+1;
-       end
-       alfa = (xx(i)-x(j-1))/(x(j)-x(j-1));
-       yy(i) = y(j-1)+alfa*(y(j)-y(j-1));
-    end
 end

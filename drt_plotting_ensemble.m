@@ -1,7 +1,6 @@
 function drt_plotting_ensemble(scenario, scenarioLow, scenarioHigh)
-    %save temptemp.mat scenario
-    %plot erosion data first
-    xlims = [min(scenario.timing.times) max(scenario.timing.times)];
+    %drt_plotting: code to plot basic model output for ensemble run
+
     
     figure('units','normalized','outerposition',[0 0 1 1])
     
@@ -9,6 +8,7 @@ function drt_plotting_ensemble(scenario, scenarioLow, scenarioHigh)
     ax1 = subplot(2,3,1);
     yyaxis left
     plot(scenario.timing.times, scenario.env.winds.windSpeed, 'k-', 'LineWidth', 3)
+    xlims = [min(scenario.timing.times) max(scenario.timing.times)];
     xpts = linspace(min(xlims), max(xlims), 5);
     xpts = unique(floor(xpts));
     xlim(xlims)
@@ -46,11 +46,11 @@ function drt_plotting_ensemble(scenario, scenarioLow, scenarioHigh)
        
     %Subplot for Water Level Time Series
     subplot(2,3,3)
-    h1 = plot(scenario.timing.times, scenario.env.tides.wl, 'Color', [0.5 0.5 0.8], 'LineWidth', 3)
+    h1 = plot(scenario.timing.times, scenario.env.tides.wl, 'Color', [0.5 0.5 0.8], 'LineWidth', 3);
     xlim(xlims)
     datetick('x', 'keeplimits')
     hold on
-    h2 = plot(scenario.timing.times, scenario.erosion.TWL, 'k','LineWidth', 3)   
+    h2 = plot(scenario.timing.times, scenario.erosion.TWL, 'k','LineWidth', 3);   
     plot(scenario.timing.times, scenarioLow.erosion.TWL, 'k-','LineWidth', 1)   
     plot(scenario.timing.times, scenarioHigh.erosion.TWL, 'k','LineWidth', 1)   
     
@@ -74,11 +74,6 @@ function drt_plotting_ensemble(scenario, scenarioLow, scenarioHigh)
    text(xo, [scenario.grids.morphometrics.dhigh+0.25], 'Dune Crest', 'FontWeight', 'bold', 'Color', [0.3 0.1 0.1])
    text(xo, [scenario.grids.morphometrics.dtoe+0.25], 'Dune Toe', 'FontWeight', 'bold', 'Color', [0.9 0.3 0.3])
     
-    %ax1.YAxis(1).Color = 'k';
-    %ax1.YAxis(2).Color = [0.5 0.5 0.5];
-    
-    
-    %xpts = linspace(min(xlims), max(xlims), 4);
     set(gca, 'XTick', xpts)
     xlim(xlims)
     datetick('x', 'keeplimits', 'keepticks')
@@ -120,9 +115,7 @@ function drt_plotting_ensemble(scenario, scenarioLow, scenarioHigh)
     
     ylims = [min(net_all)-0.5 max(net_all)+0.5]; 
     
-    hold on  
-%     ha = plot(scenario.timing.times, cumDV_erosion, 'b-', 'LineWidth', 3);   
-%     he = plot(scenario.timing.times, cumDV_accretion, 'r-', 'LineWidth', 3);   
+    hold on   
     hn = plot(scenario.timing.times, cumDV_net, 'k-', 'LineWidth', 5);   
     hnlow = plot(scenario.timing.times, max_net, 'k-', 'LineWidth', 2);   
     hnhigh = plot(scenario.timing.times, min_net, 'k-', 'LineWidth', 2);   
