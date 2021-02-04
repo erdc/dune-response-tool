@@ -283,7 +283,7 @@ function tides = noaa_download_tides(scenario)
         timetemp = double(IOOS_Hourly_Height_Verified_Wat.time/86400 + datenum(1970,1,1));
         wl = [wl; wltemp];
         time = [time; timetemp];
-
+        delete('tides.mat');
     end
 
 %     %loop through each year of predicted tide data to fill in any data gaps in ther verified data
@@ -449,7 +449,8 @@ function waves = download_ww3(start_time, end_time, lat, lon)
     waves.D_deepwater = double(ww3_global.Tdir);
     waves.Tp = double(ww3_global.Tper);
     waves.latitude = double(ww3_global.latitude);
-    waves.longitude = double(ww3_global.longitude);          
+    waves.longitude = double(ww3_global.longitude);  
+    delete('ww3.mat');
 end
 
 function winds = gfs_forecast_download(scenario)
@@ -468,6 +469,7 @@ function winds = gfs_forecast_download(scenario)
     %interpolate waves onto desired time interval
     winds.windSpeed = interp1(time, windSpeed, scenario.timing.times);    
     winds.windDirection = interp1(time, windD, scenario.timing.times);  
+    delete('gfs.mat');
 end
 
 
