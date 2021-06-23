@@ -590,10 +590,9 @@ end
 
 function tides = download_ESTOFS(scenario, zone)
     %Function to download ESTOFS surge data for input to the model
-
     input_lat = scenario.location.lat;
     input_lon = scenario.location.lon;
-    
+            
     %Time keeping
     time = now;
     timevec = datevec(time);
@@ -605,22 +604,37 @@ function tides = download_ESTOFS(scenario, zone)
 
     %Determine which geographic zone are in
     if strcmp(zone, 'Pacific') == 1
-        estofs_zone = 'pac';
+        estofs_zone = 'west';
     elseif strcmp(zone, 'Atlantic') == 1
-        estofs_zone = 'atl';        
+        estofs_zone = 'east';        
     elseif strcmp(zone, 'GulfOfMexico') == 1
-        estofs_zone = 'atl';        
+        estofs_zone = 'east';        
     else
         error('No forecast data in this zone');
     end
         
     %Use only in forecast mode
-    info = ncinfo(['https://nomads.ncep.noaa.gov:9090/dods/estofs_', estofs_zone,'/',datestring,'/estofs_', estofs_zone,'_conus_00z']);
-
+    %file = ['https://nomads.ncep.noaa.gov:9090/dods/estofs_', estofs_zone,'/',datestring,'/estofs_', estofs_zone,'_conus_00z'];
+    file = ['https://nomads.ncep.noaa.gov/dods/estofs/',datestring,'/estofs_conus.', estofs_zone,'_00z'];
+    try
+        info = ncinfo(file);
+    catch err        
+        try
+            datestring = datestr(floor(now), 'yyyymmdd');
+            file = ['https://nomads.ncep.noaa.gov/dods/estofs/',datestring,'/estofs_conus.', estofs_zone,'_00z'];
+            info = ncinfo(file);
+        catch err
+            datestring = datestr(floor(now)-1, 'yyyymmdd');
+            file = ['https://nomads.ncep.noaa.gov/dods/estofs/',datestring,'/estofs_conus.', estofs_zone,'_00z'];
+            info = ncinfo(file);
+        end
+                
+   
+    end
+        
     %find the closest node
     lon = double(info.Variables(1,3).Attributes(1,6).Value:info.Variables(1,3).Attributes(1,8).Value:info.Variables(1,3).Attributes(1,7).Value);
     lat = double(info.Variables(1,2).Attributes(1,6).Value:info.Variables(1,2).Attributes(1,8).Value:info.Variables(1,2).Attributes(1,7).Value);
-    time = double(temptime1:1/24:temptime2);
     [LON, LAT] = meshgrid(lon, lat);
     [minval, ilatuse] = min(abs(lat - input_lat));
     [minval, ilonuse] = min(abs(lon - input_lon));
@@ -631,16 +645,18 @@ function tides = download_ESTOFS(scenario, zone)
     temptime2 = info.Variables(1,1).Attributes(1,9).Value;
     temptime2 = datenum(temptime2(4:end), 'ddmmmyyyy')+str2num(temptime2(1:2))/24;
     dt = info.Variables(1,1).Attributes(1,10).Value;
+    time = double(temptime1:1/24:temptime2);
+
     
     if dt> 0.04 & dt<0.045
         dt = 1/24;
     end
-    
     %find longitude location closest to shore (but must be at or west of defined point) with surge values
     surge2 = NaN;
     count = 0;
     while sum(isnan(surge2))>0
-        surge = ncread(['https://nomads.ncep.noaa.gov:9090/dods/estofs_', estofs_zone, '/',datestring,'/estofs_', estofs_zone,'_conus_00z'], 'etsrgsfc', [ilonuse+count ilatuse 1], [1 1 Inf]);
+        %surge = ncread(['https://nomads.ncep.noaa.gov:9090/dods/estofs_', estofs_zone, '/',datestring,'/estofs_', estofs_zone,'_conus_00z'], 'etsrgsfc', [ilonuse+count ilatuse 1], [1 1 Inf]);
+        surge = ncread(file, 'etsrgsfc', [ilonuse+count ilatuse 1], [1 1 Inf]);
         clear surge2
         surge2(:,1) = surge(1,1,:);
         count = count-1;
@@ -648,9 +664,9 @@ function tides = download_ESTOFS(scenario, zone)
             surge2 = zeros(size(surge2));
         end
     end
-
+        
     tides.surge = interp1(time, surge2, scenario.timing.times);  
-    tides.wl = scenario.tides.wl+tides.surge;
+    tides.wl = scenario.env.tides.wl+tides.surge;
     
 end
 
