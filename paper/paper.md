@@ -16,7 +16,7 @@ authors:
 affiliations:
  - name: US Army Engineer Research and Development Center, Coastal and Hydraulics Laboratory - Field Research Facility, Duck, NC
    index: 1
-date: 3 February 2021
+date: 22 June 2021
 bibliography: paper.bib
 ---
 
@@ -74,7 +74,9 @@ The code consists of a matlab-based .mlapp interface which calls a series of ind
 # Future Work
 This initial tool development utilizes available datasets for a subset of the continental US. Future iterations could include morphologic datasets that also cover California, Hawaii, Alaska, and the Great Lakes region, as well as overseas regions. This initial domain was based on ease of access to data availability.
 
-This tool relies of web access to various environmental datasets as well. Most of the these datasets reside on either THREDDS or ERDDAP servers, with the later platform generally being more stable. Based on model testing there is not 100% uptime in all of these data products which provides complications for running DRT if servers are down. Future iterations of the tool could add in new web services and/or allow for easier ingestion of non-web-based environmental datasets.
+This tool relies of web access to various environmental datasets as well. Most of the these datasets reside on either
+
+ THREDDS or ERDDAP servers, with the later platform generally being more stable. Based on model testing there is not 100% uptime in all of these data products which provides complications for running DRT if servers are down. Future iterations of the tool could add in new web services and/or allow for easier ingestion of non-web-based environmental datasets.
 
 # Acknowledgements
 Development of 'DRT' was funded by the U.S. Army Engineer Research and Development Center's (ERDC) Coastal Inlets Research Program (CIRP).
