@@ -1,0 +1,78 @@
+<deployment-project plugin="plugin.apptool" plugin-version="1.0">
+  <configuration build-checksum="4059201446" file="/Users/rdchlntc/Documents/GitHub/dune-response-tool/Dune Response Tool.prj" location="/Users/rdchlntc/Documents/GitHub/dune-response-tool" name="Dune Response Tool" target="target.mlapps" target-name="Package App">
+    <param.appname>Dune Response Tool</param.appname>
+    <param.authnamewatermark>Nick Cohn</param.authnamewatermark>
+    <param.email />
+    <param.company>ERDC</param.company>
+    <param.icon />
+    <param.icons />
+    <param.summary />
+    <param.description />
+    <param.screenshot>/private/var/folders/m1/flg84r9n1jzc5wv4mcnwx3lhh5tdx0/T/tp6dceae45_0044_49dc_8d88_6e4976355bc1.png</param.screenshot>
+    <param.version>1.0</param.version>
+    <param.products.name />
+    <param.products.id />
+    <param.products.version />
+    <param.platforms />
+    <param.output>${PROJECT_ROOT}</param.output>
+    <param.guid>8966fc4e-0376-4687-b3af-bd958442efa8</param.guid>
+    <unset>
+      <param.email />
+      <param.icon />
+      <param.icons />
+      <param.summary />
+      <param.description />
+      <param.version />
+      <param.products.name />
+      <param.products.id />
+      <param.products.version />
+      <param.platforms />
+      <param.output />
+    </unset>
+    <fileset.main>
+      <file>${PROJECT_ROOT}/drt_gui.mlapp</file>
+    </fileset.main>
+    <fileset.depfun>
+      <file>${PROJECT_ROOT}/drt_accretion.m</file>
+      <file>${PROJECT_ROOT}/drt_env.m</file>
+      <file>${PROJECT_ROOT}/drt_erosion.m</file>
+      <file>${PROJECT_ROOT}/drt_grid.m</file>
+      <file>${PROJECT_ROOT}/drt_plotting.m</file>
+      <file>${PROJECT_ROOT}/drt_plotting_ensemble.m</file>
+    </fileset.depfun>
+    <fileset.resources>
+      <file>${PROJECT_ROOT}/dependencies</file>
+    </fileset.resources>
+    <fileset.package />
+    <build-deliverables>
+      <file location="/Users/rdchlntc/Documents/GitHub" name="dune-response-tool" optional="false">/Users/rdchlntc/Documents/GitHub/dune-response-tool</file>
+    </build-deliverables>
+    <workflow />
+    <matlab>
+      <root>/Users/rdchlntc/Documents/Matlab/MATLAB_R2020b.app</root>
+      <toolboxes>
+        <toolbox name="neuralnetwork" />
+      </toolboxes>
+      <toolbox>
+        <neuralnetwork>
+          <enabled>true</enabled>
+        </neuralnetwork>
+      </toolbox>
+    </matlab>
+    <platform>
+      <unix>true</unix>
+      <mac>true</mac>
+      <windows>false</windows>
+      <win2k>false</win2k>
+      <winxp>false</winxp>
+      <vista>false</vista>
+      <linux>false</linux>
+      <solaris>false</solaris>
+      <osver>10.15.7</osver>
+      <os32>false</os32>
+      <os64>true</os64>
+      <arch>maci64</arch>
+      <matlab>true</matlab>
+    </platform>
+  </configuration>
+</deployment-project>
