@@ -5,7 +5,7 @@ function scenario = drt_grid(scenario)
         %assumed geometric and gridding parameters for simplicity
         scenario.grids.morphometrics.dunewidth = 10; 
         scenario.grids.morphometrics.dx = 0.1;
-        scenario.grids.morphometrics.smoothlev = 100;
+        scenario.grids.morphometrics.smoothlev = 10;
         scenario.grids.morphometrics.shore = 0;
 
         %set up profile segments
