@@ -34,7 +34,7 @@ function scenario = drt_erosion(scenario)
         scenario.erosion.dVT= PH12.dVT;
         scenario.erosion.times = PH12.times;    
         scenario.erosion.zmat_times = [PH12.zmat_time./86400]+scenario.timing.times(1);
-
+        scenario.erosion.zRunup = PH12.zRunup;
 end
 
 function PH12 = runPH12(xM,z,time,WL,Ho,Lo,T,Bo,zb,output_times, D50, WaveRunupFactor, DuneSlopeTrajectory, DuneErodibility)
@@ -143,6 +143,7 @@ function PH12 = runPH12(xM,z,time,WL,Ho,Lo,T,Bo,zb,output_times, D50, WaveRunupF
     PH12.dV = dV; %volume of eroded sand at each time step
     PH12.dVResidual = dVResidual;
     PH12.dVT = dVT; 
+    PH12.zRunup = zR; 
     PH12.times = time;
     PH12.zmat_time = actual_output_times;
 
