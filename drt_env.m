@@ -32,7 +32,7 @@ function scenario = drt_env(scenario)
 
             %acquire tide data for NOAA Tides and Currents
             scenario.noaa = noaa_determine_node(scenario);
-                             scenario.env.tides = noaa_download_tides(scenario);
+            scenario.env.tides = noaa_download_tides(scenario);
 
                              
             try %download the verified tide data, if avaialble
@@ -261,29 +261,59 @@ function tides = noaa_download_tides(scenario)
     gauge = num2str(scenario.noaa.closest_node);
 
     %loop through each year of vertified tide data for noaa erddap server
-    wl = [];
-    time = [];
-    for yr = startYear:endYear
-        
-        %erdap server link
-        website = ['https://opendap.co-ops.nos.noaa.gov/erddap/tabledap/IOOS_Hourly_Height_Verified_Water_Level.mat?STATION_ID%2CDATUM%2CBEGIN_DATE%2CEND_DATE%2Ctime%2CWL_VALUE&STATION_ID=%22', gauge,'%22&DATUM%3E=%22', datum,'%22&BEGIN_DATE%3E=%22', num2str(yr),'0101%2000%3A00%22&END_DATE%3E=%22', num2str(yr),'1231%2023%3A59%22'];
-        
-        %download data
-        out_name = 'tides.mat'; %need to store temporary data to current folder
-        options = weboptions;
-        options.Timeout = 120;
-        websave(out_name, website, options);
-        
-        %load and then clean up variables
-        load(out_name);
-        delete(out_name);
+    try
+        wl = [];
+        time = [];
+        for yr = startYear:endYear
 
-        %store data
-        wltemp = IOOS_Hourly_Height_Verified_Wat.WL_VALUE;
-        timetemp = double(IOOS_Hourly_Height_Verified_Wat.time/86400 + datenum(1970,1,1));
-        wl = [wl; wltemp];
-        time = [time; timetemp];
-        delete('tides.mat');
+            %erdap server link
+            website = ['https://opendap.co-ops.nos.noaa.gov/erddap/tabledap/IOOS_Hourly_Height_Verified_Water_Level.mat?STATION_ID%2CDATUM%2CBEGIN_DATE%2CEND_DATE%2Ctime%2CWL_VALUE&STATION_ID=%22', gauge,'%22&DATUM%3E=%22', datum,'%22&BEGIN_DATE%3E=%22', num2str(yr),'0101%2000%3A00%22&END_DATE%3E=%22', num2str(yr),'1231%2023%3A59%22'];
+
+            %download data
+            out_name = 'tides.mat'; %need to store temporary data to current folder
+            options = weboptions;
+            options.Timeout = 120;
+            websave(out_name, website, options);
+
+            %load and then clean up variables
+            load(out_name);
+            delete(out_name);
+
+            %store data
+            wltemp = IOOS_Hourly_Height_Verified_Wat.WL_VALUE;
+            timetemp = double(IOOS_Hourly_Height_Verified_Wat.time/86400 + datenum(1970,1,1));
+            wl = [wl; wltemp];
+            time = [time; timetemp];
+            delete('tides.mat');
+        end
+    catch err
+        clear wl time
+        %     %loop through each year of predicted tide data to fill in any data gaps in ther verified data
+        yrs=startYear:endYear; % define all the year withing the start and end year limit
+        dataout=[];    
+        for i=1:length(yrs)
+            
+            for im = 1:12
+
+             st_date = datestr([yrs(i),im,1,0,0,0],'yyyymmdd');
+             end_date   = datestr([yrs(i),im+1,0,0,0,0],'yyyymmdd');
+
+             %url=['http://tidesandcurrents.noaa.gov/api/datagetter?product=predictions&application=NOS.COOPS.TAC.WL&begin_date=',st_date,'&end_date=',end_date,'&datum=NAVD&station=',gauge,'&time_zone=GMT&units=metric&interval=h&format=CSV'];
+
+             url=['https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=water_level&application=NOS.COOPS.TAC.WL&begin_date=',st_date,'&end_date=',end_date,'&datum=NAVD&station=',gauge,'&time_zone=GMT&units=metric&interval=h&format=CSV'];
+             url
+             options = weboptions;
+             options.Timeout = 120;
+             datatemp=webread(url, options);    
+
+             dataout=[dataout;datatemp];
+            end
+        end   
+        datacell = table2cell(dataout); 
+        for i=1:length(datacell)
+            time(i)=datenum(datacell{i,1});
+            wl(i)=datacell{i,2};
+        end  
     end
 
 %     %loop through each year of predicted tide data to fill in any data gaps in ther verified data
@@ -613,24 +643,52 @@ function tides = download_ESTOFS(scenario, zone)
         error('No forecast data in this zone');
     end
         
-    %Use only in forecast mode
-    %file = ['https://nomads.ncep.noaa.gov:9090/dods/estofs_', estofs_zone,'/',datestring,'/estofs_', estofs_zone,'_conus_00z'];
-    file = ['https://nomads.ncep.noaa.gov/dods/estofs/',datestring,'/estofs_conus.', estofs_zone,'_00z'];
+%     %Use only in forecast mode
+%     %file = ['https://nomads.ncep.noaa.gov:9090/dods/estofs_', estofs_zone,'/',datestring,'/estofs_', estofs_zone,'_conus_00z'];
+%     file = ['https://nomads.ncep.noaa.gov/dods/estofs/',datestring,'/estofs_conus.', estofs_zone,'_00z'];
+%     try
+%         info = ncinfo(file);
+%     catch err        
+%         try
+%             datestring = datestr(floor(now), 'yyyymmdd');
+%             file = ['https://nomads.ncep.noaa.gov/dods/estofs/',datestring,'/estofs_conus.', estofs_zone,'_00z'];
+%             info = ncinfo(file);
+%         catch err
+%             datestring = datestr(floor(now)-1, 'yyyymmdd');
+%             file = ['https://nomads.ncep.noaa.gov/dods/estofs/',datestring,'/estofs_conus.', estofs_zone,'_00z'];
+%             info = ncinfo(file);
+%         end
+%     end
+                
+ 
+        
+            
+%file = ['https://nomads.ncep.noaa.gov:9090/dods/estofs_', estofs_zone,'/',datestring,'/estofs_', estofs_zone,'_conus_00z'];
+        datestring = datestr(floor(datenum(datetime('now', 'TimeZone', 'Europe/London')-4/24)), 'yyyymmdd');
+        file = ['https://nomads.ncep.noaa.gov/dods/estofs/',datestring,'/estofs_conus.', estofs_zone,'_18z'];
     try
         info = ncinfo(file);
     catch err        
         try
             datestring = datestr(floor(now), 'yyyymmdd');
-            file = ['https://nomads.ncep.noaa.gov/dods/estofs/',datestring,'/estofs_conus.', estofs_zone,'_00z'];
+            file = ['https://nomads.ncep.noaa.gov/dods/estofs/',datestring,'/estofs_conus.', estofs_zone,'_12z'];
             info = ncinfo(file);
         catch err
+            try
             datestring = datestr(floor(now)-1, 'yyyymmdd');
+            file = ['https://nomads.ncep.noaa.gov/dods/estofs/',datestring,'/estofs_conus.', estofs_zone,'_06z'];
+            info = ncinfo(file);
+            catch err
+             datestring = datestr(floor(now)-1, 'yyyymmdd');
             file = ['https://nomads.ncep.noaa.gov/dods/estofs/',datestring,'/estofs_conus.', estofs_zone,'_00z'];
             info = ncinfo(file);
+            end
         end
-                
-   
     end
+
+                
+        
+        
         
     %find the closest node
     lon = double(info.Variables(1,3).Attributes(1,6).Value:info.Variables(1,3).Attributes(1,8).Value:info.Variables(1,3).Attributes(1,7).Value);
@@ -667,7 +725,7 @@ function tides = download_ESTOFS(scenario, zone)
         
     tides.surge = interp1(time, surge2, scenario.timing.times);  
     tides.wl = scenario.env.tides.wl+tides.surge;
-    
+   
 end
 
 
