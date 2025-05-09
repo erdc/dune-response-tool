@@ -62,9 +62,6 @@ function [zb] = avalanche(xprof,zb,tanalpha)
     dza=zeros(size(xprof));
     dx=abs(xprof(2)-xprof(1));
 
-    %tanalpha = 1;
-
-
     for i=1:length(xprof)-1
         dz=zb(i+1)-zb(i);
         if abs(dz)>tanalpha*dx
@@ -77,7 +74,7 @@ function [zb] = avalanche(xprof,zb,tanalpha)
 
 end
 
-function [scenario, zprof_update, Qtot_m3m_dt, dVacc2] = drt_accretion_instantaneous2(scenario, zin, ztoe, tt)
+function [scenario, zprof_update, Qtot_m3m_dt, dVacc2] = drt_accretion_instantaneous(scenario, zin, ztoe, tt)
 
     %drt_accretion: code to run a simple aeolian sediment transport model
     %for calculating wind blown sediment fluxes into coastal dines
@@ -99,41 +96,27 @@ function [scenario, zprof_update, Qtot_m3m_dt, dVacc2] = drt_accretion_instantan
         imax = imax+10;
         end
         try
-           % xtoe = linterp(zprof(1:imax),xprof(1:imax),dtoe);
-              xtoe = linterp(zprof,xprof,dtoe);          
+            xtoe = linterp(zprof,xprof,dtoe);          
         catch err
             try
-
-                             xtoe = interp1(zprof(1:imax),xprof(1:imax),dtoe);
+              xtoe = interp1(zprof(1:imax),xprof(1:imax),dtoe);
             catch err
-%             figure,
-%             plot(xprof, zprof)
-%             zprof(1:imax)
-%             xprof(1:imax)
-%             dtoe
-try
-             xtoe = interp1(zprof(1:imax),xprof(1:imax),dtoe);
-catch err
-               ifind = find(zprof>=dtoe);
-             xtoe = xprof(ifind(1));
-end
+                try
+                    xtoe = interp1(zprof(1:imax),xprof(1:imax),dtoe);
+                catch err
+                    ifind = find(zprof>=dtoe);
+                    xtoe = xprof(ifind(1));
+                end
             end
-%             ifind = find(zprof>=dtoe);
-%             xtoe = xprof(ifind(1));
-            error('this didnt work')
-
-
+            error('Could Not Find Dune Toe')
         end       
 
     ifind = find(zprof<dtoe);
     xtoe = xprof(max(ifind)+1);
-
-%display(['Dune Toe:', num2str(xtoe)])
-
+   
+    %Utilizing Kawamura (1951) Approach for Wind-Driven Sediment Fluxes
         u_w = scenario.env.winds.windSpeed(tt);
         windDir = scenario.env.winds.windDirection(tt)-scenario.grids.morphometrics.azimuth;
-    
-    %Utilizing Kawamura (1951) Approach for Wind-Driven Sediment Fluxes
         D50 = scenario.models.d50; %grain size
         K = 0.4; %von karman constant
         z = 10; %assumed elevation of wind measurements
@@ -152,12 +135,9 @@ end
         %critical fetch length
         Fc = 4.38*u_w - 8.23; 
 
-    %    display(['Q: ', num2str(Q)])
-
         %determine the beach width based on the total water level
         [maxval,imax] = nanmax(zprof);
         [minval,~] = nanmin(zprof);
-%         for itime = 1:numel(twl)
            if twl< maxval && twl> minval %if the twl is within the profile
                 xwl = linterp(zprof(1:imax),xprof(1:imax), twl);
                 beachwidth = xtoe-xwl;
@@ -167,10 +147,6 @@ end
                 beachwidth= 0;
             end
         beachwidth(beachwidth<0) = 0;
- 
-
-         %       display(['beach width: ', num2str(beachwidth)])
-
 
         %determine the fetch for the specific conditions
         F = beachwidth./cosd(abs(windDir));
@@ -186,35 +162,20 @@ end
             Qtot = Qtot.*cosd(abs(windDir));
             Qtot(Qtot <0) = 0;
 
-    %convert to a volume flux (initially in kg/m/s)
+        %convert to a volume flux (initially in kg/m/s)
         por = 0.4; %assumed porosity
         Qtot_m3m_dt = (Qtot/ps)*[scenario.timing.dt*60*60]/(1-por);
 
 
-           %     display(['Qtot: ', num2str(Qtot)])
-           %     display(['F: ', num2str(F)])
-           %     display(['Fc: ', num2str(Fc)])
+        ifind = find([xprof >= xtoe] & [xprof < [xtoe + 15]]);
+        xvals = xprof(ifind);
+        try
+            dx = abs(xvals(2)-xvals(1));
+        catch err
+            dx = abs(xprof(2)-xprof(1));
+        end
 
-
-
-    ifind = find([xprof >= xtoe] & [xprof < [xtoe + 15]]);
-
-
-     xvals = xprof(ifind);
-
-try
-    dx = abs(xvals(2)-xvals(1));
-catch err
-%      figure,
-%      plot(xprof, zprof)
-%     xvals
-%      xtoe 
-%      dtoe
-    dx = abs(xprof(2)-xprof(1));
-end
     tot_x = abs(xvals(end)-xvals(1));
-    %dz = [Qtot_m3m_dt/tot_x];
-
     %assuming a triangle that max deposition is 1/3 the distance of the
     %total deposition length
     if Qtot_m3m_dt > 0
@@ -265,12 +226,10 @@ end
 
         end
 
+            %now need to scale to ensure that too much mass isnt added
+            scaling = Qtot_m3m_dt/nansum(dz_localcomb*0.01);
+            dz_localcomb = dz_localcomb*scaling;
 
-%now need to scale to ensure that too much mass isnt added
-scaling = Qtot_m3m_dt/nansum(dz_localcomb*0.01);
-dz_localcomb = dz_localcomb*scaling;
-
-    
             if numel(xlocalt) > 1
             zoff = interp1(xlocalt, dz_localcomb, xprof);
             elseif numel(xlocalt) == 1
@@ -291,12 +250,6 @@ dz_localcomb = dz_localcomb*scaling;
             zoff = zeros(size(zprof));
             end
 
-
-
-
-%display(['zoff:', num2str(Qtot_m3m_dt)])
-
-    %now redistribute sed onto profile
     zprof_update = zprof+zoff;
 
 
@@ -321,11 +274,8 @@ function out = run_erosion_accretion_model(xM,z,time,WL,Ho,Lo,T,Bo,dtoe,output_t
     deltax = abs(xM(2)-xM(1));
     
     %Model Initialization
-    %Bt = Bo*Btfac; %slope at which beta receeds. LEH04 = 1, PH11 = 0.54....
     zbT = NaN(size(xM));
     zbT(st1:end)=dtoe;  %trajectory that dune toe receeds.
-    %ireplace = find(zbT>z);
-    %zbT(ireplace) = z(ireplace);
     dt = diff(time(1:2));%dt in seconds
     try
         xShore(1) = interp1(z, xM, zShore);
@@ -335,11 +285,8 @@ function out = run_erosion_accretion_model(xM,z,time,WL,Ho,Lo,T,Bo,dtoe,output_t
 
     %Main Program Loop
     output_num = 1;
-
     for tt=1:length(WL)
-
         current_output_time = output_times(output_num);
-
         if tt==1
             st = st1;
         else
@@ -351,7 +298,6 @@ function out = run_erosion_accretion_model(xM,z,time,WL,Ho,Lo,T,Bo,dtoe,output_t
         zbT(st:end)=dtoe;  %trajectory that dune toe receeds.    zbT = NaN(size(xM));
         zbT(1:st) = z(1:st);
 
-
         %dune toe position
         xToe(tt) = xM(st); 
  
@@ -361,8 +307,6 @@ function out = run_erosion_accretion_model(xM,z,time,WL,Ho,Lo,T,Bo,dtoe,output_t
         %dune volume
         V(tt) = sum(deltax.*(z(st:end)));    %measured in ref to z=0
         Vc = cumsum(deltax.*(z(st:end)-zbT(st:end)));  %cumulative volume above the dune trajectory
-        %Vc(1)
-        %Vc = Vc - Vc(1);
 
         Beta(tt) = tan(abs((zShore - dtoe)/(xShore(tt) - xToe(tt))));
         if abs(Beta(tt)) > 0.25
@@ -371,13 +315,9 @@ function out = run_erosion_accretion_model(xM,z,time,WL,Ho,Lo,T,Bo,dtoe,output_t
         Bt = Beta(tt)*Btfac;
 
         %stockdon for TWL
-        etabar(tt) = 0.35.*Beta(tt).*sqrt(Ho(tt).*Lo(tt)); %mean swash (setup)
+        etabar(tt) = 0.35.*Beta(tt).*sqrt(Ho(tt).*Lo(tt));
         sigma_s(tt) = sqrt(Ho(tt).*Lo(tt).*(0.563.*(Beta(tt).^2)+0.004))./2.*nsigma./2;
         zR(tt) = 1.1.*(etabar(tt)+ sigma_s(tt));
-        sigma_s2(tt) = sqrt(Ho(tt).*Lo(tt).*(0.563.*(Beta(tt).^2)+0.004))./2;
-        zR(tt) = 1.1.*(etabar(tt)+ sigma_s(tt));
-
-        zRLEH(tt) = 0.158.*sqrt(Ho(tt)./1.416.*Lo(tt));
         zTotal(tt) = zR(tt).*Kd + WL(tt);
         if zTotal(tt)>= [max(z)]
             zTotal(tt) = max(z);
@@ -429,7 +369,7 @@ function out = run_erosion_accretion_model(xM,z,time,WL,Ho,Lo,T,Bo,dtoe,output_t
         prof(1:ifind(1))= zShore;
         
         %Run Accretion Model
-        [scenario, zprof_update, dVaccretion(tt), dVaccretion2(tt)] = drt_accretion_instantaneous2(scenario, prof, dtoe, tt);
+        [scenario, zprof_update, dVaccretion(tt), dVaccretion2(tt)] = drt_accretion_instantaneous(scenario, prof, dtoe, tt);
         z = zprof_update;
     
         if scenario.models.Avalanche == 1
