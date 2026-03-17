@@ -7,6 +7,9 @@ scenario.grids.morphometrics.shorechange = -1; %update to -1 m/yr SCR
 %run model
 scenario = drt_model_instantaneous(scenario);
 
+% for MATLAB R2025b compatibility, use this instead:
+% scenario = drt_model_instantaneous_R2025b(scenario);
+
 %plot model results
 figure, 
 hold on

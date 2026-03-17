@@ -1,4 +1,4 @@
-function scenario = drt_model(scenario)
+function scenario = drt_model_instantaneous_R2025b(scenario)
     %drt_erosion: code to run the Palmsten and Holman (2012) dune retreat
     %model
       
